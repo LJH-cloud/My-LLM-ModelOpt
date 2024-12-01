@@ -4,3 +4,5 @@
 from .generation import Llama, Dialog
 from .model import ModelArgs, Transformer
 from .tokenizer import Tokenizer
+from .kv_cache import StartRecentKVCache
+from .utils import load_jsonl

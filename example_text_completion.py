@@ -41,7 +41,7 @@ def main(
         "I believe the meaning of life is",
         "Simply put, the theory of relativity states that ",
         """A brief message congratulating the team on the launch:
-
+        
         Hi everyone,
         
         I just """,
@@ -52,8 +52,21 @@ def main(
         peppermint => menthe poivrée
         plush girafe => girafe peluche
         cheese =>""",
+        """
+        As they sat at the small café tucked away in the quiet town, the familiar aroma of coffee filled the air, carrying with it a sense of nostalgia. Emily smiled softly at James, her childhood friend, who now sat across from her after so many years. His face, though older and marked by time, still held that same youthful spark she remembered.
+
+"Who would have thought we'd run into each other here, of all places?" Emily mused, taking a sip of her coffee.
+
+James chuckled. "I know, right? This town feels so small now. It’s funny how life pulls us back to where we started."
+
+They exchanged stories, recounting the laughter and mischief of their childhood. James spoke of his adventures abroad, his voice filled with excitement as he described the new cultures he'd encountered. Emily, now a teacher at the very school they had once attended, shared her quieter journey, one filled with the steady rhythms of life back home.
+
+As the conversation drifted, a comfortable silence settled between them. It was as though the years apart had only deepened their bond, and in that moment, they both realized how much their friendship had meant, and still meant.
+
+James broke the silence
+        """
     ]
-    results = generator.text_completion(
+    results, past_key_values = generator.text_completion(
         prompts,
         max_gen_len=max_gen_len,
         temperature=temperature,

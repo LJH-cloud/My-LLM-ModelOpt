@@ -2,10 +2,12 @@
 # This software may be used and distributed according to the terms of the Llama 2 Community License Agreement.
 
 import math
+import time
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
 import fairscale.nn.model_parallel.initialize as fs_init
+import numpy as np
 import torch
 import torch.nn.functional as F
 from fairscale.nn.model_parallel.layers import (
@@ -28,9 +30,8 @@ class ModelArgs:
     norm_eps: float = 1e-5
 
     max_batch_size: int = 32
-    max_seq_len: int = 2048
-
-
+    max_seq_len: int = 4096
+    
 class RMSNorm(torch.nn.Module):
     def __init__(self, dim: int, eps: float = 1e-6):
         """
@@ -102,7 +103,6 @@ def precompute_freqs_cis(dim: int, end: int, theta: float = 10000.0):
     freqs = torch.outer(t, freqs).float()  # type: ignore
     freqs_cis = torch.polar(torch.ones_like(freqs), freqs)  # complex64
     return freqs_cis
-
 
 def reshape_for_broadcast(freqs_cis: torch.Tensor, x: torch.Tensor):
     """
@@ -197,6 +197,7 @@ class Attention(nn.Module):
 
         """
         super().__init__()
+        self.args = args
         self.n_kv_heads = args.n_heads if args.n_kv_heads is None else args.n_kv_heads
         model_parallel_size = fs_init.get_model_parallel_world_size()
         self.n_local_heads = args.n_heads // model_parallel_size
@@ -233,22 +234,22 @@ class Attention(nn.Module):
             init_method=lambda x: x,
         )
 
-        self.cache_k = torch.zeros(
-            (
-                args.max_batch_size,
-                args.max_seq_len,
-                self.n_local_kv_heads,
-                self.head_dim,
-            )
-        ).cuda()
-        self.cache_v = torch.zeros(
-            (
-                args.max_batch_size,
-                args.max_seq_len,
-                self.n_local_kv_heads,
-                self.head_dim,
-            )
-        ).cuda()
+        # self.cache_k = torch.zeros(
+        #     (
+        #         args.max_batch_size,
+        #         args.max_seq_len,
+        #         self.n_local_kv_heads,
+        #         self.head_dim,
+        #     )
+        # ).cuda()
+        # self.cache_v = torch.zeros(
+        #     (
+        #         args.max_batch_size,
+        #         args.max_seq_len,
+        #         self.n_local_kv_heads,
+        #         self.head_dim,
+        #     )
+        # ).cuda()
 
     def forward(
         self,
@@ -256,6 +257,7 @@ class Attention(nn.Module):
         start_pos: int,
         freqs_cis: torch.Tensor,
         mask: Optional[torch.Tensor],
+        past_key_value_in: list
     ):
         """
         Forward pass of the attention module.
@@ -279,14 +281,45 @@ class Attention(nn.Module):
 
         xq, xk = apply_rotary_emb(xq, xk, freqs_cis=freqs_cis)
 
-        self.cache_k = self.cache_k.to(xq)
-        self.cache_v = self.cache_v.to(xq)
-
-        self.cache_k[:bsz, start_pos : start_pos + seqlen] = xk
-        self.cache_v[:bsz, start_pos : start_pos + seqlen] = xv
-
-        keys = self.cache_k[:bsz, : start_pos + seqlen]
-        values = self.cache_v[:bsz, : start_pos + seqlen]
+        if past_key_value_in is not None:
+            cache_k, cache_v = past_key_value_in
+            cache_k = cache_k.to(xq)
+            cache_v = cache_v.to(xq)
+            keys = torch.cat([cache_k, xk], dim=1)
+            values = torch.cat([cache_v, xv], dim=1)
+        else:
+            keys = xk
+            values = xv
+        past_key_value = (keys, values)
+        # else:
+        #     cache_k = torch.zeros(
+        #         (
+        #             self.args.max_batch_size,
+        #             self.args.max_seq_len,
+        #             self.n_local_kv_heads,
+        #             self.head_dim,
+        #         )
+        #     ).cuda()
+        #     cache_v = torch.zeros(
+        #         (
+        #             self.args.max_batch_size,
+        #             self.args.max_seq_len,
+        #             self.n_local_kv_heads,
+        #             self.head_dim,
+        #         )
+        #     ).cuda()
+        #
+        # cache_k = cache_k.to(xq)
+        # cache_v = cache_v.to(xq)
+        # print(cache_v.size())
+        #
+        # cache_k[:bsz, start_pos: start_pos + seqlen] = xk
+        # cache_v[:bsz, start_pos: start_pos + seqlen] = xv
+        #
+        # keys = cache_k[:bsz, : start_pos + seqlen]
+        # values = cache_v[:bsz, : start_pos + seqlen]
+        #
+        # past_key_value = (cache_k, cache_v)
 
         # repeat k/v heads if n_kv_heads < n_heads
         keys = repeat_kv(keys, self.n_rep)  # (bs, cache_len + seqlen, n_local_heads, head_dim)
@@ -301,7 +334,7 @@ class Attention(nn.Module):
         scores = F.softmax(scores.float(), dim=-1).type_as(xq)
         output = torch.matmul(scores, values)  # (bs, n_local_heads, seqlen, head_dim)
         output = output.transpose(1, 2).contiguous().view(bsz, seqlen, -1)
-        return self.wo(output)
+        return self.wo(output), past_key_value
 
 
 class FeedForward(nn.Module):
@@ -389,6 +422,7 @@ class TransformerBlock(nn.Module):
         start_pos: int,
         freqs_cis: torch.Tensor,
         mask: Optional[torch.Tensor],
+        past_key_value_in: list
     ):
         """
         Perform a forward pass through the TransformerBlock.
@@ -403,11 +437,12 @@ class TransformerBlock(nn.Module):
             torch.Tensor: Output tensor after applying attention and feedforward layers.
 
         """
-        h = x + self.attention(
-            self.attention_norm(x), start_pos, freqs_cis, mask
+        h, past_key_value = self.attention(
+            self.attention_norm(x), start_pos, freqs_cis, mask, past_key_value_in
         )
+        h += x
         out = h + self.feed_forward(self.ffn_norm(h))
-        return out
+        return out, past_key_value
 
 
 class Transformer(nn.Module):
@@ -454,7 +489,7 @@ class Transformer(nn.Module):
         )
 
     @torch.inference_mode()
-    def forward(self, tokens: torch.Tensor, start_pos: int):
+    def forward(self, tokens: torch.Tensor, start_pos: int, past_key_values_in: list, freq_start_pos: int):
         """
         Perform a forward pass through the Transformer model.
 
@@ -468,8 +503,13 @@ class Transformer(nn.Module):
         """
         _bsz, seqlen = tokens.shape
         h = self.tok_embeddings(tokens)
+
+        # if freq_start_pos + seqlen > len(self.freqs_cis):
+        #     self.freqs_cis = precompute_freqs_cis(
+        #         self.params.dim // self.params.n_heads, (freq_start_pos + seqlen) * 2
+        #     )
         self.freqs_cis = self.freqs_cis.to(h.device)
-        freqs_cis = self.freqs_cis[start_pos : start_pos + seqlen]
+        freqs_cis = self.freqs_cis[freq_start_pos : freq_start_pos + seqlen]
 
         mask = None
         if seqlen > 1:
@@ -488,8 +528,11 @@ class Transformer(nn.Module):
                 mask
             ]).type_as(h)
 
-        for layer in self.layers:
-            h = layer(h, start_pos, freqs_cis, mask)
+        past_key_values = []
+        for idx, layer in enumerate(self.layers):
+            past_key_value_in = past_key_values_in[idx] if past_key_values_in is not None else None
+            h, past_key_value = layer(h, start_pos, freqs_cis, mask, past_key_value_in)
+            past_key_values.append(past_key_value)
         h = self.norm(h)
         output = self.output(h).float()
-        return output
+        return output, past_key_values

@@ -6,7 +6,7 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import List, Literal, Optional, Tuple, TypedDict
+from typing import List, Literal, Optional, Tuple, TypedDict, Dict, Union
 
 import torch
 import torch.nn.functional as F
@@ -18,6 +18,7 @@ from fairscale.nn.model_parallel.initialize import (
 
 from llama.model import ModelArgs, Transformer
 from llama.tokenizer import Tokenizer
+from llama.kv_cache import StartRecentKVCache
 
 Role = Literal["system", "user", "assistant"]
 
@@ -51,12 +52,12 @@ UNSAFE_ERROR = "Error: special tags are not allowed as part of the prompt."
 class Llama:
     @staticmethod
     def build(
-        ckpt_dir: str,
-        tokenizer_path: str,
-        max_seq_len: int,
-        max_batch_size: int,
-        model_parallel_size: Optional[int] = None,
-        seed: int = 1,
+            ckpt_dir: str,
+            tokenizer_path: str,
+            max_seq_len: int,
+            max_batch_size: int,
+            model_parallel_size: Optional[int] = None,
+            seed: int = 1,
     ) -> "Llama":
         """
         Build a Llama instance by initializing and loading a pre-trained model.
@@ -128,14 +129,16 @@ class Llama:
 
     @torch.inference_mode()
     def generate(
-        self,
-        prompt_tokens: List[List[int]],
-        max_gen_len: int,
-        temperature: float = 0.6,
-        top_p: float = 0.9,
-        logprobs: bool = False,
-        echo: bool = False,
-    ) -> Tuple[List[List[int]], Optional[List[List[float]]]]:
+            self,
+            prompt_tokens: List[List[int]],
+            max_gen_len: int,
+            temperature: float = 0.6,
+            top_p: float = 0.9,
+            logprobs: bool = False,
+            echo: bool = False,
+            past_key_values_in: list = None,
+            kv_cache: StartRecentKVCache = None
+    ) -> Tuple[List[List[int]], Optional[List[List[float]]], List]:
         """
         Generate text sequences based on provided prompts using the language generation model.
 
@@ -148,7 +151,7 @@ class Llama:
             echo (bool, optional): Flag indicating whether to include prompt tokens in the generated output. Defaults to False.
 
         Returns:
-            Tuple[List[List[int]], Optional[List[List[float]]]]: A tuple containing generated token sequences and, if logprobs is True, corresponding token log probabilities.
+            Tuple[List[List[int]], Optional[List[List[float]]], List]: A tuple containing generated token sequences and, if logprobs is True, corresponding token log probabilities.
 
         Note:
             This method uses the provided prompts as a basis for generating text. It employs nucleus sampling to produce text with controlled randomness.
@@ -164,6 +167,9 @@ class Llama:
         assert max_prompt_len <= params.max_seq_len
         total_len = min(params.max_seq_len, max_gen_len + max_prompt_len)
 
+        if kv_cache is not None:
+            past_key_values_in = kv_cache.evict_for_space(past_key_values_in, total_len)
+
         pad_id = self.tokenizer.pad_id
         tokens = torch.full((bsz, total_len), pad_id, dtype=torch.long, device="cuda")
         for k, t in enumerate(prompt_tokens):
@@ -171,11 +177,12 @@ class Llama:
         if logprobs:
             token_logprobs = torch.zeros_like(tokens, dtype=torch.float)
 
+        past_key_values_in_size = past_key_values_in[0][0].size(1) if past_key_values_in is not None else 0
         prev_pos = 0
         eos_reached = torch.tensor([False] * bsz, device="cuda")
         input_text_mask = tokens != pad_id
         if min_prompt_len == total_len:
-            logits = self.model.forward(tokens, prev_pos)
+            logits, past_key_values = self.model.forward(tokens, prev_pos + past_key_values_in_size, past_key_values_in, kv_cache.length)
             token_logprobs = -F.cross_entropy(
                 input=logits.transpose(1, 2),
                 target=tokens,
@@ -184,7 +191,8 @@ class Llama:
             )
 
         for cur_pos in range(min_prompt_len, total_len):
-            logits = self.model.forward(tokens[:, prev_pos:cur_pos], prev_pos)
+            logits, past_key_values_in = self.model.forward(tokens[:, prev_pos:cur_pos], prev_pos + past_key_values_in_size, past_key_values_in, prev_pos + kv_cache.length if kv_cache is not None else 0)
+            past_key_values = past_key_values_in
             if temperature > 0:
                 probs = torch.softmax(logits[:, -1] / temperature, dim=-1)
                 next_token = sample_top_p(probs, top_p)
@@ -198,18 +206,21 @@ class Llama:
             )
             tokens[:, cur_pos] = next_token
             if logprobs:
-                token_logprobs[:, prev_pos + 1 : cur_pos + 1] = -F.cross_entropy(
+                token_logprobs[:, prev_pos + 1: cur_pos + 1] = -F.cross_entropy(
                     input=logits.transpose(1, 2),
-                    target=tokens[:, prev_pos + 1 : cur_pos + 1],
+                    target=tokens[:, prev_pos + 1: cur_pos + 1],
                     reduction="none",
                     ignore_index=pad_id,
                 )
             eos_reached |= (~input_text_mask[:, cur_pos]) & (
-                next_token == self.tokenizer.eos_id
+                    next_token == self.tokenizer.eos_id
             )
             prev_pos = cur_pos
             if all(eos_reached):
                 break
+
+        if kv_cache is not None:
+            kv_cache.update_kv_length(past_key_values)
 
         if logprobs:
             token_logprobs = token_logprobs.tolist()
@@ -217,10 +228,10 @@ class Llama:
         for i, toks in enumerate(tokens.tolist()):
             # cut to max gen len
             start = 0 if echo else len(prompt_tokens[i])
-            toks = toks[start : len(prompt_tokens[i]) + max_gen_len]
+            toks = toks[start: len(prompt_tokens[i]) + max_gen_len]
             probs = None
             if logprobs:
-                probs = token_logprobs[i][start : len(prompt_tokens[i]) + max_gen_len]
+                probs = token_logprobs[i][start: len(prompt_tokens[i]) + max_gen_len]
             # cut to eos tok if any
             if self.tokenizer.eos_id in toks:
                 eos_idx = toks.index(self.tokenizer.eos_id)
@@ -228,17 +239,18 @@ class Llama:
                 probs = probs[:eos_idx] if logprobs else None
             out_tokens.append(toks)
             out_logprobs.append(probs)
-        return (out_tokens, out_logprobs if logprobs else None)
+        return (out_tokens, out_logprobs if logprobs else None, past_key_values)
 
     def text_completion(
-        self,
-        prompts: List[str],
-        temperature: float = 0.6,
-        top_p: float = 0.9,
-        max_gen_len: Optional[int] = None,
-        logprobs: bool = False,
-        echo: bool = False,
-    ) -> List[CompletionPrediction]:
+            self,
+            prompts: List[str],
+            temperature: float = 0.6,
+            top_p: float = 0.9,
+            max_gen_len: Optional[int] = None,
+            logprobs: bool = False,
+            echo: bool = False,
+            past_key_values_in: list = None,
+    ) -> Tuple[List[Dict[str, Union[str, List[str], List[float]]]], list]:
         """
         Perform text completion for a list of prompts using the language generation model.
 
@@ -262,33 +274,36 @@ class Llama:
         if max_gen_len is None:
             max_gen_len = self.model.params.max_seq_len - 1
         prompt_tokens = [self.tokenizer.encode(x, bos=True, eos=False) for x in prompts]
-        generation_tokens, generation_logprobs = self.generate(
+        print(prompt_tokens)
+        generation_tokens, generation_logprobs, past_key_values = self.generate(
             prompt_tokens=prompt_tokens,
             max_gen_len=max_gen_len,
             temperature=temperature,
             top_p=top_p,
             logprobs=logprobs,
             echo=echo,
+            past_key_values_in=past_key_values_in
         )
         if logprobs:
             return [
-                {
-                    "generation": self.tokenizer.decode(t),
-                    "tokens": [self.tokenizer.decode(x) for x in t],
-                    "logprobs": logprobs_i,
-                }
-                for t, logprobs_i in zip(generation_tokens, generation_logprobs)
-            ]
-        return [{"generation": self.tokenizer.decode(t)} for t in generation_tokens]
+                       {
+                           "generation": self.tokenizer.decode(t),
+                           "tokens": [self.tokenizer.decode(x) for x in t],
+                           "logprobs": logprobs_i,
+                       }
+                       for t, logprobs_i in zip(generation_tokens, generation_logprobs)
+                   ], past_key_values
+        return [{"generation": self.tokenizer.decode(t)} for t in generation_tokens], past_key_values
 
     def chat_completion(
-        self,
-        dialogs: List[Dialog],
-        temperature: float = 0.6,
-        top_p: float = 0.9,
-        max_gen_len: Optional[int] = None,
-        logprobs: bool = False,
-    ) -> List[ChatPrediction]:
+            self,
+            dialogs: List[Dialog],
+            temperature: float = 0.6,
+            top_p: float = 0.9,
+            max_gen_len: Optional[int] = None,
+            logprobs: bool = False,
+            past_key_values_in: list = None
+    ) -> Tuple[List[Dict[str, Union[Dict[str, str], List[str], List[float]]]], list]:
         """
         Generate assistant responses for a list of conversational dialogs using the language generation model.
 
@@ -323,14 +338,14 @@ class Llama:
             )
             if dialog[0]["role"] == "system":
                 dialog = [
-                    {
-                        "role": dialog[1]["role"],
-                        "content": B_SYS
-                        + dialog[0]["content"]
-                        + E_SYS
-                        + dialog[1]["content"],
-                    }
-                ] + dialog[2:]
+                             {
+                                 "role": dialog[1]["role"],
+                                 "content": B_SYS
+                                            + dialog[0]["content"]
+                                            + E_SYS
+                                            + dialog[1]["content"],
+                             }
+                         ] + dialog[2:]
             assert all([msg["role"] == "user" for msg in dialog[::2]]) and all(
                 [msg["role"] == "assistant" for msg in dialog[1::2]]
             ), (
@@ -345,14 +360,14 @@ class Llama:
                         eos=True,
                     )
                     for prompt, answer in zip(
-                        dialog[::2],
-                        dialog[1::2],
-                    )
+                    dialog[::2],
+                    dialog[1::2],
+                )
                 ],
                 [],
             )
             assert (
-                dialog[-1]["role"] == "user"
+                    dialog[-1]["role"] == "user"
             ), f"Last message must be from user, got {dialog[-1]['role']}"
             dialog_tokens += self.tokenizer.encode(
                 f"{B_INST} {(dialog[-1]['content']).strip()} {E_INST}",
@@ -361,38 +376,69 @@ class Llama:
             )
             prompt_tokens.append(dialog_tokens)
 
-        generation_tokens, generation_logprobs = self.generate(
+        generation_tokens, generation_logprobs, past_key_values = self.generate(
             prompt_tokens=prompt_tokens,
             max_gen_len=max_gen_len,
             temperature=temperature,
             top_p=top_p,
             logprobs=logprobs,
+            past_key_values_in=past_key_values_in
         )
         if logprobs:
             return [
-                {
-                    "generation": {
-                        "role": "assistant",
-                        "content": self.tokenizer.decode(t)
-                        if not unsafe
-                        else UNSAFE_ERROR,
-                    },
-                    "tokens": [self.tokenizer.decode(x) for x in t],
-                    "logprobs": logprobs_i,
-                }
-                for t, logprobs_i, unsafe in zip(
+                       {
+                           "generation": {
+                               "role": "assistant",
+                               "content": self.tokenizer.decode(t)
+                               if not unsafe
+                               else UNSAFE_ERROR,
+                           },
+                           "tokens": [self.tokenizer.decode(x) for x in t],
+                           "logprobs": logprobs_i,
+                       }
+                       for t, logprobs_i, unsafe in zip(
                     generation_tokens, generation_logprobs, unsafe_requests
                 )
-            ]
+                   ], past_key_values
         return [
-            {
-                "generation": {
-                    "role": "assistant",
-                    "content": self.tokenizer.decode(t) if not unsafe else UNSAFE_ERROR,
-                }
-            }
-            for t, unsafe in zip(generation_tokens, unsafe_requests)
-        ]
+                   {
+                       "generation": {
+                           "role": "assistant",
+                           "content": self.tokenizer.decode(t) if not unsafe else UNSAFE_ERROR,
+                       }
+                   }
+                   for t, unsafe in zip(generation_tokens, unsafe_requests)
+               ], past_key_values
+
+    def my_chat_completion(
+            self,
+            message: str,
+            system: str = None,
+            temperature: float = 0.6,
+            top_p: float = 0.9,
+            max_gen_len: Optional[int] = None,
+            logprobs: bool = False,
+            past_key_values_in: list = None,
+            kv_cache: StartRecentKVCache = None
+    ):
+        if max_gen_len is None:
+            max_gen_len = self.model.params.max_seq_len - 1
+        prompt = B_SYS + system + E_SYS + message if system is not None else message
+        prompt_tokens = [self.tokenizer.encode(f"{B_INST} {prompt.strip()} {E_INST} ", bos=True, eos=True)]
+
+        generation_tokens, generation_logprobs, past_key_values = self.generate(
+            prompt_tokens=prompt_tokens,
+            max_gen_len=max_gen_len,
+            temperature=temperature,
+            top_p=top_p,
+            logprobs=logprobs,
+            past_key_values_in=past_key_values_in,
+            kv_cache=kv_cache
+        )
+        result = self.tokenizer.decode(generation_tokens[0])
+        print('ASSISTANT: ' + result, flush=True)
+        return past_key_values
+
 
 
 def sample_top_p(probs, p):
