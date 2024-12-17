@@ -1,45 +1,302 @@
-# Measuring Massive Multitask Language Understanding
-This is the repository for [Measuring Massive Multitask Language Understanding](https://arxiv.org/pdf/2009.03300) by
-[Dan Hendrycks](https://people.eecs.berkeley.edu/~hendrycks/), [Collin Burns](http://collinpburns.com), [Steven Basart](https://stevenbas.art), [Andy Zou](https://andyzoujm.github.io/), Mantas Mazeika, [Dawn Song](https://people.eecs.berkeley.edu/~dawnsong/), and [Jacob Steinhardt](https://www.stat.berkeley.edu/~jsteinhardt/) (ICLR 2021).
-
-This repository contains OpenAI API evaluation code, and the test is available for download [**here**](https://people.eecs.berkeley.edu/~hendrycks/data.tar).
-
-## Test Leaderboard
-
-If you want to have your model added to the leaderboard, please reach out to us or submit a pull request.
-
-
-Results of the test:
-|                Model               | Authors |  Humanities |  Social Sciences  | STEM | Other | Average |
-|------------------------------------|----------|:-------:|:-------:|:-------:|:-------:|:-------:|
-| [Chinchilla](https://arxiv.org/abs/2203.15556) (70B, few-shot) | Hoffmann et al., 2022 | 63.6 | 79.3 | 54.9 | 73.9 | 67.5
-| [Gopher](https://storage.googleapis.com/deepmind-media/research/language-research/Training%20Gopher.pdf) (280B, few-shot) | Rae et al., 2021 | 56.2 | 71.9 | 47.4 | 66.1 | 60.0
-| [GPT-3](https://arxiv.org/abs/2005.14165) (175B, fine-tuned) | Brown et al., 2020 | 52.5 | 63.9 | 41.4 | 57.9 | 53.9
-| [flan-T5-xl](https://arxiv.org/abs/2210.11416) | Chung et al., 2022 | 46.3 | 57.7 | 39.0 | 55.1 | 49.3
-| [UnifiedQA](https://arxiv.org/abs/2005.00700) | Khashabi et al., 2020 | 45.6 | 56.6 | 40.2 | 54.6 | 48.9
-| [GPT-3](https://arxiv.org/abs/2005.14165) (175B, few-shot) | Brown et al., 2020 | 40.8 | 50.4 | 36.7 | 48.8 | 43.9
-| [GPT-3](https://arxiv.org/abs/2005.14165) (6.7B, fine-tuned) | Brown et al., 2020 | 42.1 | 49.2 | 35.1 | 46.9 | 43.2
-| [flan-T5-large](https://arxiv.org/abs/2210.11416) | Chung et al., 2022 | 39.1 | 49.1 | 33.2 | 47.4 | 41.9
-| [flan-T5-base](https://arxiv.org/abs/2210.11416) | Chung et al., 2022 | 34.0 | 38.1 | 27.6 | 37.0 | 34.2
-| [GPT-2](https://arxiv.org/abs/2005.14165) | Radford et al., 2019 | 32.8 | 33.3 | 30.2 | 33.1 | 32.4
-| [flan-T5-small](https://arxiv.org/abs/2210.11416) | Chung et al., 2022 | 29.9 | 30.9 | 27.5 | 29.7 | 29.5
-| Random Baseline           | N/A | 25.0 | 25.0 | 25.0 | 25.0 | 25.0 | 25.0
-
-
-## Citation
-
-If you find this useful in your research, please consider citing the test and also the [ETHICS](https://arxiv.org/abs/2008.02275) dataset it draws from:
-
-    @article{hendryckstest2021,
-      title={Measuring Massive Multitask Language Understanding},
-      author={Dan Hendrycks and Collin Burns and Steven Basart and Andy Zou and Mantas Mazeika and Dawn Song and Jacob Steinhardt},
-      journal={Proceedings of the International Conference on Learning Representations (ICLR)},
-      year={2021}
-    }
-
-    @article{hendrycks2021ethics,
-      title={Aligning AI With Shared Human Values},
-      author={Dan Hendrycks and Collin Burns and Steven Basart and Andrew Critch and Jerry Li and Dawn Song and Jacob Steinhardt},
-      journal={Proceedings of the International Conference on Learning Representations (ICLR)},
-      year={2021}
-    }
+# Test Structure
+.
+├── calib_tools.py
+├── categories.py
+├── crop.py
+├── data
+│   ├── auxiliary_train
+│   │   ├── arc_easy.csv
+│   │   ├── arc_hard.csv
+│   │   ├── aux_law_90s.csv
+│   │   ├── mc_test.csv
+│   │   ├── obqa.csv
+│   │   ├── race.csv
+│   │   ├── science_elementary.csv
+│   │   └── science_middle.csv
+│   ├── dev
+│   │   ├── abstract_algebra_dev.csv
+│   │   ├── anatomy_dev.csv
+│   │   ├── astronomy_dev.csv
+│   │   ├── business_ethics_dev.csv
+│   │   ├── clinical_knowledge_dev.csv
+│   │   ├── college_biology_dev.csv
+│   │   ├── college_chemistry_dev.csv
+│   │   ├── college_computer_science_dev.csv
+│   │   ├── college_mathematics_dev.csv
+│   │   ├── college_medicine_dev.csv
+│   │   ├── college_physics_dev.csv
+│   │   ├── computer_security_dev.csv
+│   │   ├── conceptual_physics_dev.csv
+│   │   ├── econometrics_dev.csv
+│   │   ├── electrical_engineering_dev.csv
+│   │   ├── elementary_mathematics_dev.csv
+│   │   ├── formal_logic_dev.csv
+│   │   ├── global_facts_dev.csv
+│   │   ├── high_school_biology_dev.csv
+│   │   ├── high_school_chemistry_dev.csv
+│   │   ├── high_school_computer_science_dev.csv
+│   │   ├── high_school_european_history_dev.csv
+│   │   ├── high_school_geography_dev.csv
+│   │   ├── high_school_government_and_politics_dev.csv
+│   │   ├── high_school_macroeconomics_dev.csv
+│   │   ├── high_school_mathematics_dev.csv
+│   │   ├── high_school_microeconomics_dev.csv
+│   │   ├── high_school_physics_dev.csv
+│   │   ├── high_school_psychology_dev.csv
+│   │   ├── high_school_statistics_dev.csv
+│   │   ├── high_school_us_history_dev.csv
+│   │   ├── high_school_world_history_dev.csv
+│   │   ├── human_aging_dev.csv
+│   │   ├── human_sexuality_dev.csv
+│   │   ├── international_law_dev.csv
+│   │   ├── jurisprudence_dev.csv
+│   │   ├── logical_fallacies_dev.csv
+│   │   ├── machine_learning_dev.csv
+│   │   ├── management_dev.csv
+│   │   ├── marketing_dev.csv
+│   │   ├── medical_genetics_dev.csv
+│   │   ├── miscellaneous_dev.csv
+│   │   ├── moral_disputes_dev.csv
+│   │   ├── moral_scenarios_dev.csv
+│   │   ├── nutrition_dev.csv
+│   │   ├── philosophy_dev.csv
+│   │   ├── prehistory_dev.csv
+│   │   ├── professional_accounting_dev.csv
+│   │   ├── professional_law_dev.csv
+│   │   ├── professional_medicine_dev.csv
+│   │   ├── professional_psychology_dev.csv
+│   │   ├── public_relations_dev.csv
+│   │   ├── security_studies_dev.csv
+│   │   ├── sociology_dev.csv
+│   │   ├── us_foreign_policy_dev.csv
+│   │   ├── virology_dev.csv
+│   │   └── world_religions_dev.csv
+│   ├── possibly_contaminated_urls.txt
+│   ├── README.txt
+│   ├── test
+│   │   ├── abstract_algebra_test.csv
+│   │   ├── anatomy_test.csv
+│   │   ├── astronomy_test.csv
+│   │   ├── business_ethics_test.csv
+│   │   ├── clinical_knowledge_test.csv
+│   │   ├── college_biology_test.csv
+│   │   ├── college_chemistry_test.csv
+│   │   ├── college_computer_science_test.csv
+│   │   ├── college_mathematics_test.csv
+│   │   ├── college_medicine_test.csv
+│   │   ├── college_physics_test.csv
+│   │   ├── computer_security_test.csv
+│   │   ├── conceptual_physics_test.csv
+│   │   ├── econometrics_test.csv
+│   │   ├── electrical_engineering_test.csv
+│   │   ├── elementary_mathematics_test.csv
+│   │   ├── formal_logic_test.csv
+│   │   ├── global_facts_test.csv
+│   │   ├── high_school_biology_test.csv
+│   │   ├── high_school_chemistry_test.csv
+│   │   ├── high_school_computer_science_test.csv
+│   │   ├── high_school_european_history_test.csv
+│   │   ├── high_school_geography_test.csv
+│   │   ├── high_school_government_and_politics_test.csv
+│   │   ├── high_school_macroeconomics_test.csv
+│   │   ├── high_school_mathematics_test.csv
+│   │   ├── high_school_microeconomics_test.csv
+│   │   ├── high_school_physics_test.csv
+│   │   ├── high_school_psychology_test.csv
+│   │   ├── high_school_statistics_test.csv
+│   │   ├── high_school_us_history_test.csv
+│   │   ├── high_school_world_history_test.csv
+│   │   ├── human_aging_test.csv
+│   │   ├── human_sexuality_test.csv
+│   │   ├── international_law_test.csv
+│   │   ├── jurisprudence_test.csv
+│   │   ├── logical_fallacies_test.csv
+│   │   ├── machine_learning_test.csv
+│   │   ├── management_test.csv
+│   │   ├── marketing_test.csv
+│   │   ├── medical_genetics_test.csv
+│   │   ├── miscellaneous_test.csv
+│   │   ├── moral_disputes_test.csv
+│   │   ├── moral_scenarios_test.csv
+│   │   ├── nutrition_test.csv
+│   │   ├── philosophy_test.csv
+│   │   ├── prehistory_test.csv
+│   │   ├── professional_accounting_test.csv
+│   │   ├── professional_law_test.csv
+│   │   ├── professional_medicine_test.csv
+│   │   ├── professional_psychology_test.csv
+│   │   ├── public_relations_test.csv
+│   │   ├── security_studies_test.csv
+│   │   ├── sociology_test.csv
+│   │   ├── us_foreign_policy_test.csv
+│   │   ├── virology_test.csv
+│   │   └── world_religions_test.csv
+│   └── val
+│       ├── abstract_algebra_val.csv
+│       ├── anatomy_val.csv
+│       ├── astronomy_val.csv
+│       ├── business_ethics_val.csv
+│       ├── clinical_knowledge_val.csv
+│       ├── college_biology_val.csv
+│       ├── college_chemistry_val.csv
+│       ├── college_computer_science_val.csv
+│       ├── college_mathematics_val.csv
+│       ├── college_medicine_val.csv
+│       ├── college_physics_val.csv
+│       ├── computer_security_val.csv
+│       ├── conceptual_physics_val.csv
+│       ├── econometrics_val.csv
+│       ├── electrical_engineering_val.csv
+│       ├── elementary_mathematics_val.csv
+│       ├── formal_logic_val.csv
+│       ├── global_facts_val.csv
+│       ├── high_school_biology_val.csv
+│       ├── high_school_chemistry_val.csv
+│       ├── high_school_computer_science_val.csv
+│       ├── high_school_european_history_val.csv
+│       ├── high_school_geography_val.csv
+│       ├── high_school_government_and_politics_val.csv
+│       ├── high_school_macroeconomics_val.csv
+│       ├── high_school_mathematics_val.csv
+│       ├── high_school_microeconomics_val.csv
+│       ├── high_school_physics_val.csv
+│       ├── high_school_psychology_val.csv
+│       ├── high_school_statistics_val.csv
+│       ├── high_school_us_history_val.csv
+│       ├── high_school_world_history_val.csv
+│       ├── human_aging_val.csv
+│       ├── human_sexuality_val.csv
+│       ├── international_law_val.csv
+│       ├── jurisprudence_val.csv
+│       ├── logical_fallacies_val.csv
+│       ├── machine_learning_val.csv
+│       ├── management_val.csv
+│       ├── marketing_val.csv
+│       ├── medical_genetics_val.csv
+│       ├── miscellaneous_val.csv
+│       ├── moral_disputes_val.csv
+│       ├── moral_scenarios_val.csv
+│       ├── nutrition_val.csv
+│       ├── philosophy_val.csv
+│       ├── prehistory_val.csv
+│       ├── professional_accounting_val.csv
+│       ├── professional_law_val.csv
+│       ├── professional_medicine_val.csv
+│       ├── professional_psychology_val.csv
+│       ├── public_relations_val.csv
+│       ├── security_studies_val.csv
+│       ├── sociology_val.csv
+│       ├── us_foreign_policy_val.csv
+│       ├── virology_val.csv
+│       └── world_religions_val.csv
+├── data.tar.gz
+├── eval_gsm8k.py
+├── eval_humaneval.py
+├── eval_mmlu.py
+├── evaluate_flan.py
+├── evaluate_mmlu.py
+├── evaluate.py
+├── gsm8k_prompt.txt
+├── gsm8k_results.jsonl
+├── gsm8k_test.jsonl
+├── human-eval
+│   ├── data
+│   │   ├── example_problem.jsonl
+│   │   ├── example_samples.jsonl
+│   │   ├── HumanEval.jsonl
+│   │   ├── HumanEval.jsonl.gz
+│   │   ├── HumanEval_res.jsonl
+│   │   ├── HumanEval_res.jsonl_results.jsonl
+│   │   ├── HumanEval_res_origin.jsonl
+│   │   └── HumanEval_res_origin.jsonl_results.jsonl
+│   ├── human_eval
+│   │   ├── data.py
+│   │   ├── evaluate_functional_correctness.py
+│   │   ├── evaluation.py
+│   │   ├── execution.py
+│   │   ├── __init__.py
+│   │   └── __pycache__
+│   │       ├── data.cpython-38.pyc
+│   │       ├── evaluate_functional_correctness.cpython-38.pyc
+│   │       ├── evaluation.cpython-38.pyc
+│   │       ├── execution.cpython-38.pyc
+│   │       └── __init__.cpython-38.pyc
+│   ├── human_eval.egg-info
+│   │   ├── dependency_links.txt
+│   │   ├── entry_points.txt
+│   │   ├── PKG-INFO
+│   │   ├── requires.txt
+│   │   ├── SOURCES.txt
+│   │   └── top_level.txt
+│   ├── LICENSE
+│   ├── README.md
+│   ├── requirements.txt
+│   └── setup.py
+├── LICENSE
+├── logger.py
+├── log.txt
+├── __pycache__
+│   ├── categories.cpython-312.pyc
+│   ├── categories.cpython-38.pyc
+│   └── logger.cpython-38.pyc
+├── README.md
+├── results
+│   └── results_Llama
+│       ├── abstract_algebra.csv
+│       ├── anatomy.csv
+│       ├── astronomy.csv
+│       ├── business_ethics.csv
+│       ├── clinical_knowledge.csv
+│       ├── college_biology.csv
+│       ├── college_chemistry.csv
+│       ├── college_computer_science.csv
+│       ├── college_mathematics.csv
+│       ├── college_medicine.csv
+│       ├── college_physics.csv
+│       ├── computer_security.csv
+│       ├── conceptual_physics.csv
+│       ├── econometrics.csv
+│       ├── electrical_engineering.csv
+│       ├── elementary_mathematics.csv
+│       ├── formal_logic.csv
+│       ├── global_facts.csv
+│       ├── high_school_biology.csv
+│       ├── high_school_chemistry.csv
+│       ├── high_school_computer_science.csv
+│       ├── high_school_european_history.csv
+│       ├── high_school_geography.csv
+│       ├── high_school_government_and_politics.csv
+│       ├── high_school_macroeconomics.csv
+│       ├── high_school_mathematics.csv
+│       ├── high_school_microeconomics.csv
+│       ├── high_school_physics.csv
+│       ├── high_school_psychology.csv
+│       ├── high_school_statistics.csv
+│       ├── high_school_us_history.csv
+│       ├── high_school_world_history.csv
+│       ├── human_aging.csv
+│       ├── human_sexuality.csv
+│       ├── international_law.csv
+│       ├── jurisprudence.csv
+│       ├── logical_fallacies.csv
+│       ├── machine_learning.csv
+│       ├── management.csv
+│       ├── marketing.csv
+│       ├── medical_genetics.csv
+│       ├── miscellaneous.csv
+│       ├── moral_disputes.csv
+│       ├── moral_scenarios.csv
+│       ├── nutrition.csv
+│       ├── philosophy.csv
+│       ├── prehistory.csv
+│       ├── professional_accounting.csv
+│       ├── professional_law.csv
+│       ├── professional_medicine.csv
+│       ├── professional_psychology.csv
+│       ├── public_relations.csv
+│       ├── security_studies.csv
+│       ├── sociology.csv
+│       ├── us_foreign_policy.csv
+│       ├── virology.csv
+│       └── world_religions.csv
+└── test_calibration.py
