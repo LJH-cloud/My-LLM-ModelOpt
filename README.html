@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>&ast;&ast;Note of deprecation&ast;&ast;</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+            
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-light">
+            <h2 id="note-of-deprecation"><strong>Note of deprecation</strong></h2>
+<p>Thank you for developing with Llama models. As part of the Llama 3.1 release, we’ve consolidated GitHub repos and added some additional repos as we’ve expanded Llama’s functionality into being an e2e Llama Stack. Please use the following repos going forward:</p>
+<ul>
+<li><a href="https://github.com/meta-llama/llama-models">llama-models</a> - Central repo for the foundation models including basic utilities, model cards, license and use policies</li>
+<li><a href="https://github.com/meta-llama/PurpleLlama">PurpleLlama</a> - Key component of Llama Stack focusing on safety risks and inference time mitigations</li>
+<li><a href="https://github.com/meta-llama/llama-toolchain">llama-toolchain</a> - Model development (inference/fine-tuning/safety shields/synthetic data generation) interfaces and canonical implementations</li>
+<li><a href="https://github.com/meta-llama/llama-agentic-system">llama-agentic-system</a> - E2E standalone Llama Stack system, along with opinionated underlying interface, that enables creation of agentic applications</li>
+<li><a href="https://github.com/meta-llama/llama-recipes">llama-recipes</a> - Community driven scripts and integrations</li>
+</ul>
+<p>If you have any questions, please feel free to file an issue on any of the above repos and we will do our best to respond in a timely manner.</p>
+<p>Thank you!</p>
+<h1 id="deprecated-llama-2">(Deprecated) Llama 2</h1>
+<p>We are unlocking the power of large language models. Llama 2 is now accessible to individuals, creators, researchers, and businesses of all sizes so that they can experiment, innovate, and scale their ideas responsibly.</p>
+<p>This release includes model weights and starting code for pre-trained and fine-tuned Llama language models — ranging from 7B to 70B parameters.</p>
+<p>This repository is intended as a minimal example to load <a href="https://ai.meta.com/research/publications/llama-2-open-foundation-and-fine-tuned-chat-models/">Llama 2</a> models and run inference. For more detailed examples leveraging Hugging Face, see <a href="https://github.com/facebookresearch/llama-recipes/">llama-recipes</a>.</p>
+<h2 id="updates-post-launch">Updates post-launch</h2>
+<p>See <a href="UPDATES.html">UPDATES.md</a>. Also for a running list of frequently asked questions, see <a href="https://ai.meta.com/llama/faq/">here</a>.</p>
+<h2 id="download">Download</h2>
+<p>In order to download the model weights and tokenizer, please visit the <a href="https://ai.meta.com/resources/models-and-libraries/llama-downloads/">Meta website</a> and accept our License.</p>
+<p>Once your request is approved, you will receive a signed URL over email. Then run the <a href="http://download.sh">download.sh</a> script, passing the URL provided when prompted to start the download.</p>
+<p>Pre-requisites: Make sure you have <code>wget</code> and <code>md5sum</code> installed. Then run the script: <code>./download.sh</code>.</p>
+<p>Keep in mind that the links expire after 24 hours and a certain amount of downloads. If you start seeing errors such as <code>403: Forbidden</code>, you can always re-request a link.</p>
+<h3 id="access-to-hugging-face">Access to Hugging Face</h3>
+<p>We are also providing downloads on <a href="https://huggingface.co/meta-llama">Hugging Face</a>. You can request access to the models by acknowledging the license and filling the form in the model card of a repo. After doing so, you should get access to all the Llama models of a version (Code Llama, Llama 2, or Llama Guard) within 1 hour.</p>
+<h2 id="quick-start">Quick Start</h2>
+<p>You can follow the steps below to quickly get up and running with Llama 2 models. These steps will let you run quick inference locally. For more examples, see the <a href="https://github.com/facebookresearch/llama-recipes">Llama 2 recipes repository</a>.</p>
+<ol>
+<li>
+<p>In a conda env with PyTorch / CUDA available clone and download this repository.</p>
+</li>
+<li>
+<p>In the top-level directory run:</p>
+<pre><code class="language-bash">pip install -e .
+</code></pre>
+</li>
+<li>
+<p>Visit the <a href="https://ai.meta.com/resources/models-and-libraries/llama-downloads/">Meta website</a> and register to download the model/s.</p>
+</li>
+<li>
+<p>Once registered, you will get an email with a URL to download the models. You will need this URL when you run the <a href="http://download.sh">download.sh</a> script.</p>
+</li>
+<li>
+<p>Once you get the email, navigate to your downloaded llama repository and run the <a href="http://download.sh">download.sh</a> script.</p>
+<ul>
+<li>Make sure to grant execution permissions to the <a href="http://download.sh">download.sh</a> script</li>
+<li>During this process, you will be prompted to enter the URL from the email.</li>
+<li>Do not use the “Copy Link” option but rather make sure to manually copy the link from the email.</li>
+</ul>
+</li>
+<li>
+<p>Once the model/s you want have been downloaded, you can run the model locally using the command below:</p>
+</li>
+</ol>
+<pre><code class="language-bash">torchrun --nproc_per_node 1 example_chat_completion.py \
+    --ckpt_dir llama-2-7b-chat/ \
+    --tokenizer_path llama-2-7b-chat/tokenizer.model \
+    --max_seq_len 512 --max_batch_size 6
+</code></pre>
+<p><strong>Note</strong></p>
+<ul>
+<li>Replace  <code>llama-2-7b-chat/</code> with the path to your checkpoint directory and <code>tokenizer.model</code> with the path to your tokenizer model.</li>
+<li>The <code>–nproc_per_node</code> should be set to the <a href="#inference">MP</a> value for the model you are using.</li>
+<li>Adjust the <code>max_seq_len</code> and <code>max_batch_size</code> parameters as needed.</li>
+<li>This example runs the <a href="example_chat_completion.py">example_chat_completion.py</a> found in this repository but you can change that to a different .py file.</li>
+</ul>
+<h2 id="inference">Inference</h2>
+<p>Different models require different model-parallel (MP) values:</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>MP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>7B</td>
+<td>1</td>
+</tr>
+<tr>
+<td>13B</td>
+<td>2</td>
+</tr>
+<tr>
+<td>70B</td>
+<td>8</td>
+</tr>
+</tbody>
+</table>
+<p>All models support sequence length up to 4096 tokens, but we pre-allocate the cache according to <code>max_seq_len</code> and <code>max_batch_size</code> values. So set those according to your hardware.</p>
+<h3 id="pretrained-models">Pretrained Models</h3>
+<p>These models are not finetuned for chat or Q&amp;A. They should be prompted so that the expected answer is the natural continuation of the prompt.</p>
+<p>See <code>example_text_completion.py</code> for some examples. To illustrate, see the command below to run it with the llama-2-7b model (<code>nproc_per_node</code> needs to be set to the <code>MP</code> value):</p>
+<pre><code>torchrun --nproc_per_node 1 example_text_completion.py \
+    --ckpt_dir llama-2-7b/ \
+    --tokenizer_path tokenizer.model \
+    --max_seq_len 128 --max_batch_size 4
+</code></pre>
+<h3 id="fine-tuned-chat-models">Fine-tuned Chat Models</h3>
+<p>The fine-tuned models were trained for dialogue applications. To get the expected features and performance for them, a specific formatting defined in <a href="https://github.com/facebookresearch/llama/blob/main/llama/generation.py#L212"><code>chat_completion</code></a>
+needs to be followed, including the <code>INST</code> and <code>&lt;&lt;SYS&gt;&gt;</code> tags, <code>BOS</code> and <code>EOS</code> tokens, and the whitespaces and breaklines in between (we recommend calling <code>strip()</code> on inputs to avoid double-spaces).</p>
+<p>You can also deploy additional classifiers for filtering out inputs and outputs that are deemed unsafe. See the llama-recipes repo for <a href="https://github.com/facebookresearch/llama-recipes/blob/main/examples/inference.py">an example</a> of how to add a safety checker to the inputs and outputs of your inference code.</p>
+<p>Examples using llama-2-7b-chat:</p>
+<pre><code>torchrun --nproc_per_node 1 example_chat_completion.py \
+    --ckpt_dir llama-2-7b-chat/ \
+    --tokenizer_path tokenizer.model \
+    --max_seq_len 512 --max_batch_size 6
+</code></pre>
+<p>Llama 2 is a new technology that carries potential risks with use. Testing conducted to date has not — and could not — cover all scenarios.
+In order to help developers address these risks, we have created the <a href="Responsible-Use-Guide.pdf">Responsible Use Guide</a>. More details can be found in our research paper as well.</p>
+<h2 id="issues">Issues</h2>
+<p>Please report any software “bug”, or other problems with the models through one of the following means:</p>
+<ul>
+<li>Reporting issues with the model: <a href="http://github.com/facebookresearch/llama">github.com/facebookresearch/llama</a></li>
+<li>Reporting risky content generated by the model: <a href="http://developers.facebook.com/llama_output_feedback">developers.facebook.com/llama_output_feedback</a></li>
+<li>Reporting bugs and security concerns: <a href="http://facebook.com/whitehat/info">facebook.com/whitehat/info</a></li>
+</ul>
+<h2 id="model-card">Model Card</h2>
+<p>See <a href="MODEL_CARD.html">MODEL_CARD.md</a>.</p>
+<h2 id="license">License</h2>
+<p>Our model and weights are licensed for both researchers and commercial entities, upholding the principles of openness. Our mission is to empower individuals, and industry through this opportunity, while fostering an environment of discovery and ethical AI advancements.</p>
+<p>See the <a href="LICENSE">LICENSE</a> file, as well as our accompanying <a href="USE_POLICY.html">Acceptable Use Policy</a></p>
+<h2 id="references">References</h2>
+<ol>
+<li><a href="https://ai.meta.com/research/publications/llama-2-open-foundation-and-fine-tuned-chat-models/">Research Paper</a></li>
+<li><a href="https://ai.meta.com/resources/models-and-libraries/llama">Llama 2 technical overview</a></li>
+<li><a href="https://ai.meta.com/llama/open-innovation-ai-research-community/">Open Innovation AI Research Community</a></li>
+</ol>
+<p>For common questions, the FAQ can be found <a href="https://ai.meta.com/llama/faq/">here</a> which will be kept up to date over time as new questions arise.</p>
+<h2 id="original-llama">Original Llama</h2>
+<p>The repo for the original llama release is in the <a href="https://github.com/facebookresearch/llama/tree/llama_v1"><code>llama_v1</code></a> branch.</p>
+
+            
+            
+        </body>
+        </html>
