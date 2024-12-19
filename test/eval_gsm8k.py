@@ -80,15 +80,15 @@ def is_correct(completion, answer):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_dir", "-d", type=str, default="gsm8k_test.jsonl")
-    parser.add_argument("--save_dir", "-s", type=str, default="gsm8k_results.jsonl")
+    parser.add_argument("--data_dir", "-d", type=str, default="gsm8k/gsm8k_test.jsonl")
+    parser.add_argument("--save_dir", "-s", type=str, default="gsm8k/gsm8k_results.jsonl")
     parser.add_argument("--ckpt_dir", "-m", type=str)
     parser.add_argument("--tokenizer_path", "-t", type=str)
     parser.add_argument("--max_seq_len", type=int, default=4096)
 
     args = parser.parse_args()
 
-    fewshot_prompt = open("gsm8k_prompt.txt").read()
+    fewshot_prompt = open("gsm8k/gsm8k_prompt.txt").read()
     # if args.sample_input_file is not None:
     #     dataset = load_from_disk(args.sample_input_file)
     # else:

@@ -121,7 +121,7 @@ def eval(
 
 
 def main(args):
-    logger.init_logger('log.txt')
+    logger.init_logger('mmlu/log.txt')
     # tokenizer = AutoTokenizer.from_pretrained(args.model,use_fast=False,add_bos_token=False, model_max_length=4096,padding_side="right",trust_remote_code=True)
     # model = AutoModelForCausalLM.from_pretrained(args.model,  torch_dtype=torch.bfloat16, device_map="auto",trust_remote_code=True)
     generator = Llama.build(
@@ -194,8 +194,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--ntrain", "-k", type=int, default=5)
     # parser.add_argument("--ngpu", "-g", type=int, default=8)
-    parser.add_argument("--data_dir", "-d", type=str, default="data")
-    parser.add_argument("--save_dir", "-s", type=str, default="results")
+    parser.add_argument("--data_dir", "-d", type=str, default="mmlu/data")
+    parser.add_argument("--save_dir", "-s", type=str, default="mmlu/results")
     parser.add_argument("--ckpt_dir", "-m", type=str)
     parser.add_argument("--tokenizer_path", "-t", type=str)
     parser.add_argument("--max_seq_len", type=int, default=4096)
