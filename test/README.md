@@ -1,5 +1,5 @@
 # Test
-测试时单GPU显存需要48GB+
+测试时使用单GPU，显存需要48GB+
 ## MMLU
 输入mmlu文件夹内的数据集，输出为各类别的精准度，在mmlu文件夹下的results以及log.txt中
 ## GSM8K

@@ -18,7 +18,7 @@ from fairscale.nn.model_parallel.initialize import (
 
 from llama.model import ModelArgs, Transformer
 from llama.tokenizer import Tokenizer
-from llama.kv_cache import StartRecentKVCache
+from kv_cache.kv_cache import StartRecentKVCache
 
 Role = Literal["system", "user", "assistant"]
 
